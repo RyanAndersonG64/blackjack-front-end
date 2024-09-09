@@ -1,4 +1,5 @@
 import { useContext, useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
 import { AuthContext } from "./authContext"
 import { createUser, getToken } from "./api"
 
@@ -56,9 +57,13 @@ function Login() {
   const { auth } = useContext(AuthContext)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const navigate = useNavigate()
 
   const submit = () => {
     getToken({ auth, username, password })
+    .then(response => {
+      navigate('/')
+    })
   }
 
   return (
@@ -80,10 +85,13 @@ function Login() {
       </div>
 
       <div style={{ marginTop: 20 }}>
-        <button onClick={() => submit()}>Submit</button>
+        <button onClick={() => {
+          submit()
+        }
+        }>Submit</button>
       </div>
 
-      <hr/>
+      <hr />
 
       <CreateUserInput />
 

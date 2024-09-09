@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useContext } from 'react'
 import ReactDOM from 'react-dom/client'
+import { Navigate } from 'react-router-dom'
 import {
   createBrowserRouter,
   RouterProvider,
@@ -26,8 +27,18 @@ function Layout() {
       <div id='page-content'>
         <Outlet />
       </div>
-      <Footer />
     </>
+  )
+}
+
+const Protected = ({component}) => {
+  const { auth } = useContext(AuthContext)
+  return auth?.accessToken ? (
+    <>
+      {component}
+    </>
+  ) : (
+    <Navigate to="/" replace={true} />
   )
 }
 
@@ -38,7 +49,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: '/',
-        element: <App />,
+        element: <Protected component = {<App />} />,
         errorElement: <ErrorPage />
       },
       {
