@@ -13,7 +13,7 @@ function App() {
   const [dealerHand, setDealerHand] = useState([])
   const [shoePosition, setShoePosition] = useState(0)
   const [aces, setAces] = useState(0)
-  const [winStatement, setWinStatement] = useState('')
+  const [winStatement, setWinStatement] = useState(' ')
 
   const [cardsDealt, setCardsDealt] = useState(false)
   const [dealerTurn, setDealerTurn] = useState(false)
@@ -193,20 +193,22 @@ function App() {
       ))}
       <br></br><br></br>
 
-      <button onClick={() => {
-        setWinStatement('')
-        setAces(0)
-        setPlayerHand([shoe[shoePosition], shoe[shoePosition + 2]])
-        setDealerHand([shoe[shoePosition + 1], shoe[shoePosition + 3]])
-        setShoePosition(shoePosition + 4)
-        setCardsDealt(true)
-        setBust(false)
-        setDealerTurn(false)
-      }}
+      {winStatement !== '' && (
+        <button onClick={() => { //might be firing even if accidentally clicked mid round
+          setWinStatement('')
+          setAces(0)
+          setPlayerHand([shoe[shoePosition], shoe[shoePosition + 2]])
+          setDealerHand([shoe[shoePosition + 1], shoe[shoePosition + 3]])
+          setShoePosition(shoePosition + 4)
+          setCardsDealt(true)
+          setBust(false)
+          setDealerTurn(false)
+        }}
 
-      >
-        Deal Cards
-      </button>
+        >
+          Deal Cards
+        </button>
+      )}
       {winStatement && (
         <h5>
           {winStatement}
@@ -220,4 +222,5 @@ function App() {
 export default App
 
 // add profile page to deposit, withdraw and view total earnings
-// write jsx for playing the game
+// make it so aces are 1 or 11 at the right time
+// hide dealers second card
