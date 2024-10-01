@@ -22,12 +22,12 @@ function App() {
   const [winStatement, setWinStatement] = useState(' ')
   const [cardsDealt, setCardsDealt] = useState(false)
   const [dealerTurn, setDealerTurn] = useState(false)
-  const [bust, setBust] = useState(false)
+  const [roundOver, setRoundOver] = useState(true)
 
   useEffect(
     () => {
       if (!auth.accessToken) {
-        navigate('/')
+        navigate('/login')
       }
     },
     []
@@ -60,9 +60,9 @@ function App() {
 
   useEffect(() => {
     if (playerSum > 21 && playerAces == 0) {
-      setBust(true)
+      setDealerTurn(true) // reveals dealer's second card
+      setRoundOver(true)
       setWinStatement(`${firstName} busts`)
-      setDealerTurn(true)
     } else if (playerSum > 21 && playerAces > 0) {
       setPlayerAces(playerAces - 1)
       setPlayerSum(playerSum - 10)
@@ -70,18 +70,24 @@ function App() {
   }, [playerSum])
 
   useEffect(() => {
+    console.log(dealerSum, dealerAces)
     if (dealerSum > 21 && dealerAces == 0) {
+      setRoundOver(true)
       setWinStatement(`Dealer busts`)
     } else if (dealerSum > 21 && dealerAces > 0) {
       setDealerAces(dealerAces - 1)
       setDealerSum(dealerSum - 10)
+      setTimeout(() => {
+        dealerGameplay()
+      }, 1000)
+    } else if (dealerTurn) {
       dealerGameplay()
     }
   }, [dealerSum])
 
   useEffect(() => {
-    
-    if (dealerTurn && !bust) {
+
+    if (dealerTurn && !roundOver) {
       setTimeout(() => {
         dealerGameplay()
       }, 1000)
@@ -94,8 +100,14 @@ function App() {
     }
   }, [playerHand, dealerHand])
 
+  useEffect(() => {
+    if (!roundOver) {
+      dealCards()
+    }
+  }, [roundOver])
 
-  function valueConversion(card) {
+
+  function valueConversion(card) { // converts cards to their blackjack number values
     switch (card) {
       case '2':
         return 2;
@@ -131,11 +143,40 @@ function App() {
     return arr.reduce((acc, cur) => acc + valueConversion(cur.value), 0)
   }
 
+  function dealCards() {
+    setWinStatement('')
+
+    setPlayerHand([shoe[shoePosition], shoe[shoePosition + 2]])
+
+    if (shoe[shoePosition].value == 'A' && shoe[shoePosition + 2].value == 'A') {
+      setPlayerAces(2)
+    } else if ((shoe[shoePosition].value == 'A' && shoe[shoePosition + 2].value != 'A') || (shoe[shoePosition].value != 'A' && shoe[shoePosition + 2].value == 'A')) {
+      setPlayerAces(1)
+    } else if (shoe[shoePosition].value != 'A' && shoe[shoePosition + 2].value != 'A') {
+      setPlayerAces(0)
+    }
+    setPlayerSum(valueConversion(shoe[shoePosition].value) + valueConversion(shoe[shoePosition + 2].value))
+
+    setDealerHand([shoe[shoePosition + 1], shoe[shoePosition + 3]])
+
+    if (shoe[shoePosition + 1].value == 'A' && shoe[shoePosition + 3].value == 'A') {
+      setDealerAces(2)
+    } else if ((shoe[shoePosition + 1].value == 'A' && shoe[shoePosition + 3].value != 'A') || (shoe[shoePosition + 1].value != 'A' && shoe[shoePosition + 3].value == 'A')) {
+      setDealerAces(1)
+    } else if (shoe[shoePosition + 1].value != 'A' && shoe[shoePosition + 3].value != 'A') {
+      setDealerAces(0)
+    }
+    setDealerSum(valueConversion(shoe[shoePosition + 1].value) + valueConversion(shoe[shoePosition + 3].value))
+
+    setShoePosition(shoePosition + 4)
+    setCardsDealt(true)
+    setDealerTurn(false)
+  }
 
 
-  function endRound() {
-    console.log('endRound has fired')
-    if (!bust) {
+  function winCheck() {
+    console.log('winCheck has fired')
+    if (!roundOver) {
       if (playerSum > dealerSum) {
         setWinStatement(`${firstName} wins`)
       } else if (playerSum < dealerSum) {
@@ -151,16 +192,22 @@ function App() {
     console.log('blackjack check is happening')
 
     if (sum(playerHand) == 21 && sum(dealerHand) != 21) {
+      setDealerTurn(true) // reveals dealer's second card
+      setRoundOver(true)
       setWinStatement(`${firstName} has blackjack`)
     } else if (sum(dealerHand) == 21 && sum(playerHand) != 21) {
+      setDealerTurn(true) // reveals dealer's second card
+      setRoundOver(true)
       setWinStatement(`Dealer has blackjack`)
     } else if (sum(dealerHand) == 21 && sum(playerHand) == 21) {
+      setDealerTurn(true) // reveals dealer's second card
+      setRoundOver(true)
       setWinStatement(`Both players have blackjack`)
     }
   }
 
   function hit() {
-    if (!dealerTurn && winStatement === ``) {
+    if (!dealerTurn && !roundOver) {
       setPlayerHand([...playerHand, shoe[shoePosition]])
       if (shoe[shoePosition].value == 'A') {
         setPlayerAces(playerAces + 1)
@@ -173,7 +220,8 @@ function App() {
   function dealerGameplay() {
 
     if (dealerSum > 16 && dealerSum < 22) {
-      endRound()
+      setRoundOver(true)
+      winCheck()
     } else if (dealerSum < 17) {
       setDealerHand([...dealerHand, shoe[shoePosition]])
       if (shoe[shoePosition].value == 'A') {
@@ -189,15 +237,22 @@ function App() {
       <h1>
         {firstName}
       </h1>
-      <h6>
+      <h5>
         Total: {playerSum}
-      </h6>
+      </h5>
 
 
       {playerHand && playerHand.map(card => (
-        <h4>
-          {card.value} of {card.suit}
-        </h4>
+        <div>
+          {card.image ?
+            <h4>
+              {card.image}
+            </h4>
+            :
+            <h4>
+              {card.value} of {card.suit}
+            </h4>}
+        </div>
       ))}
       {cardsDealt && (
         <div className='game-buttons'>
@@ -211,7 +266,7 @@ function App() {
           &nbsp;&nbsp;
 
           <button onClick={() => {
-            if (!dealerTurn && winStatement === ``) {
+            if (!dealerTurn && !roundOver) {
               setDealerTurn(true)
               setTimeout(() => {
                 dealerGameplay()
@@ -228,7 +283,7 @@ function App() {
               if (playerHand.length == 2) {
                 hit()
                 setTimeout(() => {
-                  if (winStatement === '') {
+                  if (!roundOver) {
                     setDealerTurn(true)
                     dealerGameplay()
                   }
@@ -240,6 +295,16 @@ function App() {
               Double Down
             </button>
           )}
+          &nbsp;&nbsp;
+          {playerHand.length == 2 && playerHand[0]?.value == playerHand[1]?.value && (
+            <button onClick={() => {
+              alert('hue')
+            }}
+
+            >
+              Split
+            </button>
+          )}
         </div>
       )}
       <br></br><br></br>
@@ -248,9 +313,9 @@ function App() {
       </h1>
 
       {dealerTurn ?
-        <h6>
+        <h5>
           Total: {dealerSum}
-        </h6>
+        </h5>
 
         :
 
@@ -259,6 +324,7 @@ function App() {
           <br></br>
           Hidden Card
         </h4>
+        
       }
 
       {dealerTurn && dealerHand.map(card => (
@@ -276,8 +342,9 @@ function App() {
       )}
       <br></br>
 
-      {winStatement !== '' && (
+      {roundOver && (
         <button onClick={() => {
+          setRoundOver(false)
           setWinStatement('')
 
           setPlayerHand([shoe[shoePosition], shoe[shoePosition + 2]])
@@ -304,7 +371,6 @@ function App() {
 
           setShoePosition(shoePosition + 4)
           setCardsDealt(true)
-          setBust(false)
           setDealerTurn(false)
         }}
 
@@ -321,4 +387,11 @@ export default App
 
 // add profile page to deposit, withdraw and view total earnings
 // set up betting and appropriate payouts
-// split
+
+// split (can only be done if cards are equal value)
+//    establish splitHand variable with splitAces
+//    if splitting aces, set playerAces and splitAces to 1
+//    splitting sets playerHand to playerHand[1] and shoe[shoePosition]
+//    sets splitHand to playerHand[2] and shoe[shoePosition + 1]
+//    shoeposition += 2
+// add hit, stay, double, split(?) functions for splitHand and buttons that call them
