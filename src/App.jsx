@@ -62,6 +62,7 @@ function App() {
     if (playerSum > 21 && playerAces == 0) {
       setBust(true)
       setWinStatement(`${firstName} busts`)
+      setDealerTurn(true)
     } else if (playerSum > 21 && playerAces > 0) {
       setPlayerAces(playerAces - 1)
       setPlayerSum(playerSum - 10)
@@ -80,7 +81,7 @@ function App() {
 
   useEffect(() => {
     
-    if (dealerTurn) {
+    if (dealerTurn && !bust) {
       setTimeout(() => {
         dealerGameplay()
       }, 1000)
@@ -319,4 +320,5 @@ function App() {
 export default App
 
 // add profile page to deposit, withdraw and view total earnings
+// set up betting and appropriate payouts
 // split
