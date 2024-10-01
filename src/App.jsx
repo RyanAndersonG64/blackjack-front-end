@@ -72,24 +72,13 @@ function App() {
   }, [playerSum])
 
   useEffect(() => {
-    if (dealerSum > 21 && dealerAces == 0) {
-      setRoundOver(true)
-      winCheck()
-    } else if (dealerSum > 21 && dealerAces > 0) {
-      setDealerAces(dealerAces - 1)
-      setDealerSum(dealerSum - 10)
-      dealerGameplay()
-    } else if (dealerTurn) {
-      dealerGameplay()
-    }
-  }, [dealerSum])
-
-  useEffect(() => {
 
     if (dealerTurn && !roundOver) {
-      dealerGameplay()
+      setTimeout(() => {
+        dealerGameplay()
+      }, 1000)
     }
-  }, [dealerHand, dealerTurn])
+  }, [dealerHand, dealerTurn, dealerSum])
 
   useEffect(() => {
     if (!roundOver) {
@@ -197,16 +186,13 @@ function App() {
     if (sum(playerHand) == 21 && sum(dealerHand) != 21) {
       setDealerTurn(true) // reveals dealer's second card
       setRoundOver(true)
-      setWinStatement(`${firstName} has blackjack`)
       setBalance(balance + 2.5 * bet)
     } else if (sum(dealerHand) == 21 && sum(playerHand) != 21) {
       setDealerTurn(true) // reveals dealer's second card
       setRoundOver(true)
-      setWinStatement(`Dealer has blackjack`)
     } else if (sum(dealerHand) == 21 && sum(playerHand) == 21) {
       setDealerTurn(true) // reveals dealer's second card
       setRoundOver(true)
-      setWinStatement(`Both players have blackjack`)
       setBalance(balance + bet)
     }
   }
@@ -233,18 +219,26 @@ function App() {
     }
   }
 
+
+
   function dealerGameplay() {
 
-    if (dealerSum > 16 && dealerSum < 22) {
-      setRoundOver(true)
-      winCheck()
-    } else if (dealerSum < 17) {
+    if (dealerSum < 17) {
       setDealerHand([...dealerHand, shoe[shoePosition]])
       if (shoe[shoePosition].value == 'A') {
         setDealerAces(dealerAces + 1)
       }
       setDealerSum(dealerSum + valueConversion(shoe[shoePosition].value))
       setShoePosition(shoePosition + 1)
+
+    } else if (dealerSum > 21 && dealerAces > 0) {
+      setDealerAces(dealerAces - 1)
+      setDealerSum(dealerSum - 10)
+      
+    } else {
+      setRoundOver(true)
+      winCheck()
+
     }
   }
 
@@ -255,7 +249,7 @@ function App() {
       </h1>
       <h5>
         Bet: {bet} <br></br>
-        Total: {playerSum}
+        Total: {playerSum} {playerSum == 21 && playerHand.length == 2 && ' - Blackjack'}
       </h5>
 
 
@@ -325,7 +319,7 @@ function App() {
 
       {dealerTurn ?
         <h5>
-          Total: {dealerSum}
+          Total: {dealerSum} {dealerSum == 21 && dealerHand.length == 2 && ' - Blackjack'}
         </h5>
 
         :
@@ -355,7 +349,7 @@ function App() {
 
       {roundOver && (
         <div>
-          <input type='number' style={{ width: 60 }} defaultValue={0} onChange={(e) => {
+          <input type='number' style={{ width: 60 }} defaultValue={bet} onChange={(e) => {
             if (e.target.value < 0) {
               e.target.value = 0
             } else if (Number(e.target.value) > Number(balance)) { // for some reason it only compares first digits without Number()
