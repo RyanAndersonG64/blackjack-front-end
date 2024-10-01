@@ -19,8 +19,9 @@ function App() {
   const [playerSum, setPlayerSum] = useState(0)
   const [dealerSum, setDealerSum] = useState(0)
 
+  const [balance, setBalance] = useState(0)
+  const [bet, setBet] = useState(0)
   const [winStatement, setWinStatement] = useState(' ')
-  const [cardsDealt, setCardsDealt] = useState(false)
   const [dealerTurn, setDealerTurn] = useState(false)
   const [roundOver, setRoundOver] = useState(true)
 
@@ -37,8 +38,9 @@ function App() {
     () => {
       fetchUser({ auth })
         .then(response => {
-          setUser(`${response.data.first_name} ${response.data.last_name}`)
+          setUser(response.data)
           setFirstName(`${response.data.first_name}`)
+          setBalance(`${response.data.balance}`)
         })
       getDecks({ auth, deckNumber: 6 })
         .then(response => {
@@ -62,7 +64,7 @@ function App() {
     if (playerSum > 21 && playerAces == 0) {
       setDealerTurn(true) // reveals dealer's second card
       setRoundOver(true)
-      setWinStatement(`${firstName} busts`)
+      winCheck()
     } else if (playerSum > 21 && playerAces > 0) {
       setPlayerAces(playerAces - 1)
       setPlayerSum(playerSum - 10)
@@ -70,16 +72,13 @@ function App() {
   }, [playerSum])
 
   useEffect(() => {
-    console.log(dealerSum, dealerAces)
     if (dealerSum > 21 && dealerAces == 0) {
       setRoundOver(true)
-      setWinStatement(`Dealer busts`)
+      winCheck()
     } else if (dealerSum > 21 && dealerAces > 0) {
       setDealerAces(dealerAces - 1)
       setDealerSum(dealerSum - 10)
-      setTimeout(() => {
-        dealerGameplay()
-      }, 1000)
+      dealerGameplay()
     } else if (dealerTurn) {
       dealerGameplay()
     }
@@ -88,23 +87,19 @@ function App() {
   useEffect(() => {
 
     if (dealerTurn && !roundOver) {
-      setTimeout(() => {
-        dealerGameplay()
-      }, 1000)
+      dealerGameplay()
     }
   }, [dealerHand, dealerTurn])
 
   useEffect(() => {
-    if (cardsDealt && playerHand.length == 2 && dealerHand.length == 2) {
-      blackjackCheck()
-    }
-  }, [playerHand, dealerHand])
-
-  useEffect(() => {
     if (!roundOver) {
-      dealCards()
+      blackjackCheck()
+    } else {
+      winCheck()
     }
   }, [roundOver])
+
+
 
 
   function valueConversion(card) { // converts cards to their blackjack number values
@@ -144,6 +139,7 @@ function App() {
   }
 
   function dealCards() {
+    (setBalance(balance - bet))
     setWinStatement('')
 
     setPlayerHand([shoe[shoePosition], shoe[shoePosition + 2]])
@@ -169,32 +165,40 @@ function App() {
     setDealerSum(valueConversion(shoe[shoePosition + 1].value) + valueConversion(shoe[shoePosition + 3].value))
 
     setShoePosition(shoePosition + 4)
-    setCardsDealt(true)
     setDealerTurn(false)
   }
 
 
   function winCheck() {
-    console.log('winCheck has fired')
-    if (!roundOver) {
-      if (playerSum > dealerSum) {
-        setWinStatement(`${firstName} wins`)
-      } else if (playerSum < dealerSum) {
-        setWinStatement(`Dealer wins`)
+    if (roundOver) {
+      if (playerSum > 21) {
+        setWinStatement(`${firstName} busts`)
+      } else if (dealerSum > 21) {
+        setWinStatement(`Dealer busts`)
+        setBalance(balance + 2 * bet)
       } else {
-        setWinStatement('Push')
+        if (playerSum > dealerSum) {
+          setWinStatement(`${firstName} wins`)
+          setBalance(balance + 2 * bet)
+        } else if (playerSum < dealerSum) {
+          setWinStatement(`Dealer wins`)
+        } else {
+          setWinStatement('Push')
+          setBalance(Number(balance + 1 * bet))
+        }
       }
     }
   }
 
 
   function blackjackCheck() {
-    console.log('blackjack check is happening')
+
 
     if (sum(playerHand) == 21 && sum(dealerHand) != 21) {
       setDealerTurn(true) // reveals dealer's second card
       setRoundOver(true)
       setWinStatement(`${firstName} has blackjack`)
+      setBalance(balance + 2.5 * bet)
     } else if (sum(dealerHand) == 21 && sum(playerHand) != 21) {
       setDealerTurn(true) // reveals dealer's second card
       setRoundOver(true)
@@ -203,6 +207,7 @@ function App() {
       setDealerTurn(true) // reveals dealer's second card
       setRoundOver(true)
       setWinStatement(`Both players have blackjack`)
+      setBalance(balance + bet)
     }
   }
 
@@ -214,6 +219,17 @@ function App() {
       }
       setPlayerSum(playerSum + valueConversion(shoe[shoePosition].value))
       setShoePosition(shoePosition + 1)
+    }
+  }
+
+  function doubleDown() {
+    if (playerHand.length == 2) {
+      setBalance(balance - bet)
+      setBet(2 * bet)
+      hit()
+      if (!roundOver) {
+        setDealerTurn(true)
+      }
     }
   }
 
@@ -235,9 +251,10 @@ function App() {
   return (
     <div className="p-5">
       <h1>
-        {firstName}
+        {firstName} {balance}
       </h1>
       <h5>
+        Bet: {bet} <br></br>
         Total: {playerSum}
       </h5>
 
@@ -254,7 +271,7 @@ function App() {
             </h4>}
         </div>
       ))}
-      {cardsDealt && (
+      {!roundOver && (
         <div className='game-buttons'>
           <button onClick={() => {
             hit()
@@ -268,9 +285,6 @@ function App() {
           <button onClick={() => {
             if (!dealerTurn && !roundOver) {
               setDealerTurn(true)
-              setTimeout(() => {
-                dealerGameplay()
-              }, 1000);
             }
           }}
 
@@ -280,16 +294,13 @@ function App() {
           &nbsp;&nbsp;
           {playerHand.length < 3 && (
             <button onClick={() => {
-              if (playerHand.length == 2) {
-                hit()
-                setTimeout(() => {
-                  if (!roundOver) {
-                    setDealerTurn(true)
-                    dealerGameplay()
-                  }
-                }, 1000);
+              if (playerSum < 12) {
+                doubleDown()
+              } else if (confirm(`You have ${playerSum}. Are you sure you want to double down?`)) {
+                doubleDown()
               }
-            }}
+            }
+            }
 
             >
               Double Down
@@ -324,7 +335,7 @@ function App() {
           <br></br>
           Hidden Card
         </h4>
-        
+
       }
 
       {dealerTurn && dealerHand.map(card => (
@@ -343,40 +354,31 @@ function App() {
       <br></br>
 
       {roundOver && (
-        <button onClick={() => {
-          setRoundOver(false)
-          setWinStatement('')
+        <div>
+          <input type='number' style={{ width: 60 }} defaultValue={0} onChange={(e) => {
+            if (e.target.value < 0) {
+              e.target.value = 0
+            } else if (Number(e.target.value) > Number(balance)) { // for some reason it only compares first digits without Number()
+              alert('You do not have enough for that bet')
+              e.target.value = balance
+            }
+            setBet(e.target.value)
+          }} >
+          </input>
+          &nbsp;&nbsp;&nbsp;&nbsp;
+          <button onClick={() => {
+            if (bet > 0) {
+              dealCards()
+              setRoundOver(false)
+            } else {
+              alert('Place a bet!')
+            }
+          }}
 
-          setPlayerHand([shoe[shoePosition], shoe[shoePosition + 2]])
-
-          if (shoe[shoePosition].value == 'A' && shoe[shoePosition + 2].value == 'A') {
-            setPlayerAces(2)
-          } else if ((shoe[shoePosition].value == 'A' && shoe[shoePosition + 2].value != 'A') || (shoe[shoePosition].value != 'A' && shoe[shoePosition + 2].value == 'A')) {
-            setPlayerAces(1)
-          } else if (shoe[shoePosition].value != 'A' && shoe[shoePosition + 2].value != 'A') {
-            setPlayerAces(0)
-          }
-          setPlayerSum(valueConversion(shoe[shoePosition].value) + valueConversion(shoe[shoePosition + 2].value))
-
-          setDealerHand([shoe[shoePosition + 1], shoe[shoePosition + 3]])
-
-          if (shoe[shoePosition + 1].value == 'A' && shoe[shoePosition + 3].value == 'A') {
-            setDealerAces(2)
-          } else if ((shoe[shoePosition + 1].value == 'A' && shoe[shoePosition + 3].value != 'A') || (shoe[shoePosition + 1].value != 'A' && shoe[shoePosition + 3].value == 'A')) {
-            setDealerAces(1)
-          } else if (shoe[shoePosition + 1].value != 'A' && shoe[shoePosition + 3].value != 'A') {
-            setDealerAces(0)
-          }
-          setDealerSum(valueConversion(shoe[shoePosition + 1].value) + valueConversion(shoe[shoePosition + 3].value))
-
-          setShoePosition(shoePosition + 4)
-          setCardsDealt(true)
-          setDealerTurn(false)
-        }}
-
-        >
-          Deal Cards
-        </button>
+          >
+            Deal Cards
+          </button>
+        </div>
       )}
     </div>
   )
