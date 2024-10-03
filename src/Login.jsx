@@ -62,7 +62,7 @@ function Login() {
   const submit = () => {
     getToken({ auth, username, password })
     .then(response => {
-      navigate('/')
+      navigate('/app')
     })
   }
 

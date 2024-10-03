@@ -8,14 +8,16 @@ function Header() {
 
   return (
     <div style={{ margin: 10 }}>
-      <Link style={{ marginRight: 20 }} to='/'>Home</Link>
-      <Link 
+      <Link style={{ marginRight: 20, color: 'black' }} to='/app'>Home</Link>
+      <Link style={{ color: 'black' }}
         onClick={() => {
           auth.setAccessToken(undefined)
         }}
-        to='/login'>Log out</Link>
+        to='/'>Log out</Link>
     </div>
   )
 }
 
 export default Header
+
+// only navigate if token 

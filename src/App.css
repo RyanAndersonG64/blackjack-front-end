@@ -3,6 +3,7 @@ html {
 }
 body {
   height: 100%;
+  background-color: rgb(18, 156, 18);
 }
 #root {
   display: flex;
@@ -12,4 +13,16 @@ body {
 }
 #page-content {
   flex-grow: 2;
+}
+
+.card {
+  display: inline;
+  background-color: rgb(18, 156, 18);
+  border: none;
+}
+
+.card-image {
+  width: 5%;
+  height: auto;
+  margin: 1%;
 }

@@ -48,12 +48,12 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
     children: [
       {
-        path: '/',
+        path: 'app/',
         element: <Protected component = {<App />} />,
         errorElement: <ErrorPage />
       },
       {
-        path: '/login',
+        path: '/',
         element: <Login />
       },
     ]
@@ -80,3 +80,5 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <RouterProvider router={router} />
   </AuthContextProvider>
 )
+
+// navigate to login if no token
