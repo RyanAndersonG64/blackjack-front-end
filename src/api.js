@@ -60,3 +60,22 @@ export const getDecks = ({auth, deckNumber}) => {
     return response
   }).catch(error => console.log('ERROR: ', error))
 }
+
+
+
+// card images
+
+export const getImages = ({ auth }) => {
+  return axios({
+    method: 'get',
+    url: `${baseUrl}/get-images/`,
+    headers: {
+      Authorization: `Bearer ${auth.accessToken}`,
+    },
+  })
+    .then((response) => {
+      console.log(response.data);
+      return response;
+    })
+    .catch((error) => console.log('Get images error: ', error));
+};

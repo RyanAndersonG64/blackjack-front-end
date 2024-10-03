@@ -1,12 +1,13 @@
 import { useContext, useState, useEffect } from "react"
 import { AuthContext } from "./authContext"
-import { fetchUser, getDecks } from "./api"
+import { fetchUser, getDecks, getImages } from "./api"
 
 
 function App() {
   const { auth } = useContext(AuthContext)
   const [user, setUser] = useState([])
   const [firstName, setFirstName] = useState([])
+  const [images, setImages] = useState([])
 
   const [shoe, setShoe] = useState([])
   const [playerHand, setPlayerHand] = useState([])
@@ -25,10 +26,12 @@ function App() {
   const [dealerTurn, setDealerTurn] = useState(false)
   const [roundOver, setRoundOver] = useState(true)
 
+  const baseUrl = "http://127.0.0.1:8000"
+
   useEffect(
     () => {
       if (!auth.accessToken) {
-        navigate('/login')
+        navigate('/')
       }
     },
     []
@@ -46,6 +49,11 @@ function App() {
         .then(response => {
           setShoe(response.data)
         })
+      getImages({ auth })
+        .then(response => {
+          console.log(response.data)
+          setImages(response.data)
+        })
     },
     []
   )
@@ -59,6 +67,13 @@ function App() {
     }
   }, [shoePosition])
 
+  useEffect(() => {
+    console.log('Player:', playerHand, playerSum)
+  }, [playerHand])
+
+  useEffect(() => {
+    console.log('Dealer:', dealerHand, dealerSum)
+  }, [dealerHand])
 
   useEffect(() => {
     if (playerSum > 21 && playerAces == 0) {
@@ -172,8 +187,10 @@ function App() {
         } else if (playerSum < dealerSum) {
           setWinStatement(`Dealer wins`)
         } else {
-          setWinStatement('Push')
-          setBalance(Number(balance + 1 * bet))
+          if (playerHand.length > 0) {
+            setWinStatement('Push')
+            setBalance(Number(balance) + Number(bet))
+          }
         }
       }
     }
@@ -186,7 +203,7 @@ function App() {
     if (sum(playerHand) == 21 && sum(dealerHand) != 21) {
       setDealerTurn(true) // reveals dealer's second card
       setRoundOver(true)
-      setBalance(balance + 2.5 * bet)
+      setBalance(balance + 1.5 * bet) // make sure this is consistently correct, there are timing issues with setting balance and instantly checking for blackjack
     } else if (sum(dealerHand) == 21 && sum(playerHand) != 21) {
       setDealerTurn(true) // reveals dealer's second card
       setRoundOver(true)
@@ -234,7 +251,7 @@ function App() {
     } else if (dealerSum > 21 && dealerAces > 0) {
       setDealerAces(dealerAces - 1)
       setDealerSum(dealerSum - 10)
-      
+
     } else {
       setRoundOver(true)
       winCheck()
@@ -253,18 +270,19 @@ function App() {
       </h5>
 
 
-      {playerHand && playerHand.map(card => (
-        <div>
-          {card.image ?
-            <h4>
-              {card.image}
-            </h4>
-            :
-            <h4>
-              {card.value} of {card.suit}
-            </h4>}
-        </div>
-      ))}
+        {playerHand && playerHand.map(card => (
+          <div className="card">
+            {card.image ?
+              <img className="card-image" src={`${baseUrl}${images[card.image-3].image}`} alt={`${images[card.image-3].title}`}
+              >
+              </img>
+              :
+              <h4>
+                {card.value} of {card.suit}
+              </h4>}
+          </div>
+        ))}
+      
       {!roundOver && (
         <div className='game-buttons'>
           <button onClick={() => {
@@ -317,25 +335,38 @@ function App() {
         Dealer
       </h1>
 
-      {dealerTurn ?
+      {dealerTurn &&
+
         <h5>
           Total: {dealerSum} {dealerSum == 21 && dealerHand.length == 2 && ' - Blackjack'}
         </h5>
+      }
 
-        :
-
-        <h4>
-          {dealerHand[0]?.value} of {dealerHand[0]?.suit}
-          <br></br>
-          Hidden Card
-        </h4>
-
+      {!dealerTurn && !roundOver &&
+        <div>
+          {dealerHand[0].image ?
+            <img className="card-image" src={`${baseUrl}${images[dealerHand[0].image-3].image}`} alt={`${images[dealerHand[0].image-3].title}`}
+            >
+            </img>
+            :
+            <h4>
+              {dealerHand[0].value} of {dealerHand[0].suit}
+            </h4>}
+          <img className='card-image' src={`${baseUrl}${images[54].image}`} alt='Facedown Card'></img>
+        </div>
       }
 
       {dealerTurn && dealerHand.map(card => (
-        <h4>
-          {card.value} of {card.suit}
-        </h4>
+        <div className="card">
+          {card.image ?
+            <img className="card-image" src={`${baseUrl}${images[card.image-3].image}`} alt={`${images[card.image-3].title}`}
+            >
+            </img>
+            :
+            <h4>
+              {card.value} of {card.suit}
+            </h4>}
+        </div>
       ))}
       <br></br>
 
@@ -381,8 +412,9 @@ function App() {
 
 export default App
 
-// add profile page to deposit, withdraw and view total earnings
-// set up betting and appropriate payouts
+// add profile page to deposit, withdraw and view total earnings (look into graph stuff nathan was talking about)
+// set up betting and appropriate payouts (i think this works now)
+// send updated balance to back end
 
 // split (can only be done if cards are equal value)
 //    establish splitHand variable with splitAces
