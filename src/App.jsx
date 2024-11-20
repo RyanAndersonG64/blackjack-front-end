@@ -321,7 +321,7 @@ function App() {
           &nbsp;&nbsp;
           {playerHand.length == 2 && playerHand[0]?.value == playerHand[1]?.value && (
             <button onClick={() => {
-              alert('hue')
+              alert('Splitting has not been implemented yet')
             }}
 
             >
